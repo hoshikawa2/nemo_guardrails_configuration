@@ -42,6 +42,7 @@ def add_trace(trace, label, result):
 
 
 def executar_pipeline_validacoes(context: dict):
+    print("🔥🔥🔥 ACTION FOI EXECUTADA")
     payload = extrair_payload(context)
 
     request_id = payload.get("request_id") or str(uuid.uuid4())
@@ -108,7 +109,7 @@ def executar_pipeline_validacoes(context: dict):
     # =========================
 
     if avaliar_qualidade_resposta is not None:
-        r_cmp = avaliar_qualidade_resposta(final_response)
+        r_cmp = avaliar_qualidade_resposta(input_text, final_response)
         add_trace(trace, "CMP", r_cmp)
         if not r_cmp.allowed:
             failures.append(("CMP", r_cmp.reason))

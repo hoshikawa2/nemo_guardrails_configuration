@@ -22,6 +22,7 @@ rails = build_rails()
 
 
 def executar_atendimento(user_input: str, context: dict):
+
     request_id = str(uuid.uuid4())
 
     payload = {
@@ -30,35 +31,103 @@ def executar_atendimento(user_input: str, context: dict):
         "context": context or {},
     }
 
-    response = rails.generate(
-        messages=[
+    # 🔥 chama direto seu pipeline
+    executar_pipeline_validacoes({
+        "messages": [
             {
                 "role": "user",
-                "content": json.dumps(payload, ensure_ascii=False),
+                "content": json.dumps(payload)
             }
         ]
-    )
+    })
 
     result = PIPELINE_RESULTS.pop(request_id, None)
 
-    if result:
-        return result
-
-    return {
-        "allowed": False,
-        "label": "PROBLEMA",
-        "reason": "Pipeline não retornou resultado estruturado",
-        "response": response,
-        "trace": [],
-    }
+    return result
 
 
 if __name__ == "__main__":
-    user_input = "quero cancelar VAS"
 
-    context = {
-        "ajuste_valor": 2000,
-        "resposta_llm": "Cancelamento realizado",
-    }
+    def rodar_teste(nome, user_input, context):
+        print("\n" + "="*60)
+        print(f"🧪 TESTE: {nome}")
+        print("-"*60)
+        print("INPUT:", user_input)
+        print("CONTEXT:", context)
 
-    print(executar_atendimento(user_input, context))
+        result = executar_atendimento(user_input, context)
+
+        print("\n📌 RESULTADO FINAL:")
+        print(result)
+
+        print("\n🔍 TRACE:")
+        for step in result.get("trace", []):
+            print(step)
+
+        print("="*60)
+
+
+    # =========================
+    # ✅ TESTE 1 - OK (CONFORME)
+    # =========================
+    rodar_teste(
+        "OK - Cancelamento válido",
+        "quero cancelar VAS",
+        {
+            "ajuste_valor": 20,
+            "resposta_llm": "Cancelamento realizado com sucesso."
+        }
+    )
+
+
+    # =========================
+    # ❌ TESTE 2 - TOXICIDADE
+    # =========================
+    rodar_teste(
+        "TOX - Linguagem ofensiva",
+        "quero cancelar VAS seu lixo",
+        {
+            "ajuste_valor": 20,
+            "resposta_llm": "Cancelamento realizado."
+        }
+    )
+
+
+    # =========================
+    # ❌ TESTE 3 - ALÇADA
+    # =========================
+    rodar_teste(
+        "ADJ - Valor acima da alçada",
+        "quero cancelar VAS",
+        {
+            "ajuste_valor": 2000,
+            "resposta_llm": "Cancelamento realizado."
+        }
+    )
+
+
+    # =========================
+    # ❌ TESTE 4 - GROUNDEDNESS
+    # =========================
+    rodar_teste(
+        "GND - Resposta não confiável",
+        "quero cancelar VAS",
+        {
+            "ajuste_valor": 20,
+            "resposta_llm": "O cancelamento ativa cashback infinito e crédito ilimitado."
+        }
+    )
+
+
+    # =========================
+    # ⚠️ TESTE 5 - MÚLTIPLOS PROBLEMAS
+    # =========================
+    rodar_teste(
+        "MULTI - TOX + ADJ + GND",
+        "quero cancelar VAS seu inútil",
+        {
+            "ajuste_valor": 5000,
+            "resposta_llm": "Você ganha benefícios ilimitados com esse cancelamento."
+        }
+    )
+

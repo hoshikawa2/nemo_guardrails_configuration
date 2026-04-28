@@ -1,11 +1,11 @@
+colang_version: "1.0"
+
 models:
   - type: main
     engine: openai
     model: gpt-5
 
-colang_version: "1.0"
-
 rails:
-  dialog:
+  input:
     flows:
       - main
