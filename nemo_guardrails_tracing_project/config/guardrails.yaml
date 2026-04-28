@@ -1,0 +1,24 @@
+guardrails:
+  - {codigo: MSK, item: "PII Masking", mecanismo: regex}
+  - {codigo: CMP, item: "Compliance Anatel", mecanismo: regex}
+  - {codigo: ADJ, item: "Alçada de Ajuste", mecanismo: python}
+  - {codigo: REVPREC_SUP, item: "Supervisor VAS Avulso", mecanismo: llm_supervisor}
+  - {codigo: TCR, item: "Conclusão de Tarefa", mecanismo: python}
+  - {codigo: REVPREC, item: "Verbalização Prematura", mecanismo: llm_rail}
+  - {codigo: FALLBACK, item: "Fallback Não Entendi", mecanismo: python}
+  - {codigo: VIOL, item: "Violação de Guardrails", mecanismo: python}
+  - {codigo: TOX, item: "Toxicidade", mecanismo: llm_rail}
+  - {codigo: OOS, item: "Out-of-Scope", mecanismo: llm_rail}
+  - {codigo: GND, item: "Groundedness", mecanismo: llm_rail}
+  - {codigo: HIST, item: "Consistência Histórica", mecanismo: python}
+  - {codigo: PMPTK, item: "Prompt Tokens", mecanismo: python}
+  - {codigo: EFIC, item: "Eficiência NLU", mecanismo: python}
+  - {codigo: NO-M, item: "No-Match RAG", mecanismo: python}
+  - {codigo: CSI, item: "Sentimento", mecanismo: llm_judge}
+  - {codigo: ALUC, item: "Taxa de Alucinação", mecanismo: llm_judge}
+  - {codigo: VLOOP, item: "Volume de Loops", mecanismo: python}
+  - {codigo: MSIZE, item: "Tamanho de Mensagem", mecanismo: python}
+  - {codigo: RQLT, item: "Qualidade da Resposta", mecanismo: llm_judge}
+  - {codigo: VCTN, item: "Tom de Voz", mecanismo: llm_judge}
+  - {codigo: REVPREC_METRIC, item: "Precisão e Revocação", mecanismo: python}
+  - {codigo: SEMAC, item: "Acurácia Semântica STT", mecanismo: python}

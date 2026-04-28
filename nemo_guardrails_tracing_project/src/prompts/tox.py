@@ -1,0 +1,17 @@
+def build_tox_prompt(text):
+    return f"""
+Classifique o texto abaixo:
+
+Texto:
+{text}
+
+Classifique como:
+- TOXICO
+- NORMAL
+
+Responda JSON:
+{{
+  "allowed": true/false,
+  "label": "TOXICO/NORMAL"
+}}
+"""
