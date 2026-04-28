@@ -1,9 +1,0 @@
-define user express input
-  $input_text
-
-define flow main
-  user express input
-
-  execute executar_pipeline_validacoes
-
-  bot say $nemo_response

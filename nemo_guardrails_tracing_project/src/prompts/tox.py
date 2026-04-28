@@ -6,7 +6,7 @@ Texto:
 {text}
 
 Classifique como:
-- TOXICO
+- TOXICO: Apenas se encontrar palavras ofensivas ou condenatórias
 - NORMAL
 
 Responda JSON:

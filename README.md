@@ -859,8 +859,7 @@ Já o código **app_nemo.py** utiliza o framework **Nemo Guardrails** para ilust
     python -m src.app_nemo
 
 
-![img_3.png](img_3.png)
-
+![img_4.png](img_4.png)
 
 ## 12. Mapeamento da planilha para implementação
 

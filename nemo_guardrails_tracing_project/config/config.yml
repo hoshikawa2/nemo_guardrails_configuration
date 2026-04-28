@@ -1,11 +1,27 @@
-colang_version: "1.0"
-
 models:
   - type: main
     engine: openai
     model: gpt-5
+    api_key_env_var: OPENAI_API_KEY
+    parameters:
+      temperature: 0
+      base_url: http://127.0.0.1:8051/v1
+      max_tokens: 50   # 🔥 evita respostas longas do LLM
+
+  # 🔥 usado apenas se você chamar explicitamente no flow
+  - type: self_check_input
+    engine: openai
+    model: openai.gpt-oss-120b
+    api_key_env_var: OPENAI_API_KEY
+    parameters:
+      temperature: 0
+      base_url: http://127.0.0.1:8051/v1
+
 
 rails:
   input:
     flows:
-      - main
+      - check_input_terms
+  output:
+    flows:
+      - check_output_terms

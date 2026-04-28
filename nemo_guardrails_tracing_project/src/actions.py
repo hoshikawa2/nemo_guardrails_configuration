@@ -1,150 +1,284 @@
-# src/actions.py
-
-import json
-import uuid
-
+from typing import Optional
+from nemoguardrails.actions import action
+from .deterministic_rails import (
+    mask_pii,
+    validar_alcada,
+    enforce_compliance_anatel,
+    calcular_tcr,
+    detectar_fallback,
+    registrar_violacao,
+    validar_consistencia_historica,
+    contabilizar_tokens,
+    calcular_eficiencia_nlu,
+    detectar_no_match_rag,
+    detectar_loop,
+    medir_tamanho_mensagem,
+    calcular_precisao_revocacao,
+    avaliar_acuracia_semantica,
+)
 from .llm_rails import (
     detectar_toxicidade,
     detectar_out_of_scope,
     verbalizacao_prematura,
     validar_groundedness,
+    supervisor_vas_avulso,
 )
 
-from .deterministic_rails import validar_alcada
+# =========================
+# HELPERS
+# =========================
 
-try:
-    from .judges import avaliar_qualidade_resposta
-except Exception:
-    avaliar_qualidade_resposta = None
+def get_payload(context: Optional[dict]) -> dict:
+    return (context or {}).get("payload", {})
 
+# =========================
+# ACTIONS
+# =========================
 
-PIPELINE_RESULTS = {}
+@action(is_system_action=True)
+async def mask_pii_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 MSK")
 
+    payload = get_payload(context)
+    input_text = payload.get("input_text") or context.get("user_message", "")
 
-def extrair_payload(context: dict) -> dict:
-    try:
-        messages = context.get("messages", [])
-        content = messages[-1]["content"]
-        return json.loads(content)
-    except Exception:
-        return {}
+    result = mask_pii(input_text)
 
+    if context is not None:
+        context["text"] = getattr(result, "sanitized_text", input_text)
 
-def add_trace(trace, label, result):
-    trace.append({
-        "rail": label,
-        "allowed": result.allowed,
-        "reason": result.reason,
-        "code": getattr(result, "code", label),
-        "mechanism": getattr(result, "mechanism", ""),
-        "data": getattr(result, "data", {}),
-    })
+    return result
 
 
-def executar_pipeline_validacoes(context: dict):
-    print("🔥🔥🔥 ACTION FOI EXECUTADA")
-    payload = extrair_payload(context)
+# -------------------------
 
-    request_id = payload.get("request_id") or str(uuid.uuid4())
-    input_text = payload.get("input_text", "")
-    ctx = payload.get("context", {}) or {}
+@action(is_system_action=True)
+async def detectar_toxicidade_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 TOX")
 
-    trace = []
-    failures = []
+    text = context.get("text") or context.get("user_message", "")
 
-    # =========================
-    # INPUT RAILS - LLM
-    # =========================
+    result = detectar_toxicidade(text)
 
-    r_tox = detectar_toxicidade(input_text)
-    add_trace(trace, "TOX", r_tox)
-    if not r_tox.allowed:
-        failures.append(("TOX", r_tox.reason))
+    return result
 
-    r_oos = detectar_out_of_scope(input_text)
-    add_trace(trace, "OOS", r_oos)
-    if not r_oos.allowed:
-        failures.append(("OOS", r_oos.reason))
 
-    # =========================
-    # BUSINESS RAIL - DETERMINISTIC
-    # =========================
+# -------------------------
 
-    valor = ctx.get("ajuste_valor")
-    r_adj = validar_alcada(valor)
-    add_trace(trace, "ADJ", r_adj)
-    if not r_adj.allowed:
-        failures.append(("ADJ", r_adj.reason))
+@action(is_system_action=True)
+async def detectar_out_of_scope_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 OOS")
 
-    # =========================
-    # LLM RESPONSE
-    # =========================
+    text = context.get("text") or context.get("user_message", "")
 
-    final_response = ctx.get("resposta_llm", "")
+    result = detectar_out_of_scope(text)
 
-    trace.append({
-        "step": "LLM",
-        "allowed": True,
-        "input": input_text,
-        "output_preview": final_response[:200],
-        "mechanism": "provided_response_or_proxy",
-    })
+    return result
 
-    # =========================
-    # OUTPUT RAILS - LLM
-    # =========================
 
-    r_revprec = verbalizacao_prematura(final_response, ctx)
-    add_trace(trace, "REVPREC", r_revprec)
-    if not r_revprec.allowed:
-        failures.append(("REVPREC", r_revprec.reason))
+# -------------------------
 
-    r_gnd = validar_groundedness(final_response, ctx)
-    add_trace(trace, "GND", r_gnd)
-    if not r_gnd.allowed:
-        failures.append(("GND", r_gnd.reason))
+@action(is_system_action=True)
+async def validar_alcada_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 ADJ")
 
-    # =========================
-    # OPTIONAL JUDGE / CMP
-    # =========================
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
 
-    if avaliar_qualidade_resposta is not None:
-        r_cmp = avaliar_qualidade_resposta(input_text, final_response)
-        add_trace(trace, "CMP", r_cmp)
-        if not r_cmp.allowed:
-            failures.append(("CMP", r_cmp.reason))
-    else:
-        trace.append({
-            "rail": "CMP",
-            "allowed": True,
-            "reason": "CMP não configurado",
-            "mechanism": "skipped",
-            "data": {},
-        })
+    valor = ctx.get("ajuste_valor", 0)
 
-    # =========================
-    # FINAL DECISION
-    # =========================
+    result = validar_alcada(valor)
 
-    blocked = len(failures) > 0
+    return result
 
-    if blocked:
-        first_code, first_reason = failures[0]
-        nemo_response = f"BLOCKED:{first_code} - {first_reason}"
-    else:
-        nemo_response = final_response
 
-    result = {
-        "allowed": not blocked,
-        "label": "CONFORME" if not blocked else "PROBLEMA",
-        "response": final_response,
-        "reason": nemo_response if blocked else "",
-        "failures": failures,
-        "trace": trace,
-    }
+# -------------------------
 
-    PIPELINE_RESULTS[request_id] = result
+@action(is_system_action=True)
+async def verbalizacao_prematura_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 REVPREC")
 
-    return {
-        "nemo_response": nemo_response
-    }
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    resposta = ctx.get("resposta_llm", "")
+
+    result = verbalizacao_prematura(resposta, ctx)
+
+    return result
+
+
+# -------------------------
+
+@action(is_system_action=True)
+async def validar_groundedness_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 GND")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    resposta = ctx.get("resposta_llm", "")
+
+    result = validar_groundedness(resposta, ctx)
+
+    return result
+
+# -------------------------
+
+@action(is_system_action=True)
+async def supervisor_vas_avulso_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 REVPREC_SUP")
+
+    payload = get_payload(context)
+
+    result = supervisor_vas_avulso(payload)
+
+    return result
+
+@action(is_system_action=True)
+async def enforce_compliance_anatel_action(context=None, **kwargs):
+    print("🔥 CMP")
+
+    text = context.get("text") or context.get("user_message", "")
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    result = enforce_compliance_anatel(text, ctx)
+
+    return result
+
+@action(is_system_action=True)
+async def calcular_tcr_action(context=None, **kwargs):
+    print("🔥 TCR")
+
+    payload = get_payload(context)
+    status = payload.get("context", {}).get("status", "")
+
+    result = calcular_tcr(status)
+
+    return result
+
+@action(is_system_action=True)
+async def detectar_fallback_action(context=None, **kwargs):
+    print("🔥 FALLBACK")
+
+    text = context.get("text") or context.get("user_message", "")
+
+    result = detectar_fallback(text)
+
+    return result
+
+@action(is_system_action=True)
+async def registrar_violacao_action(context=None, **kwargs):
+    print("🔥 VIOL")
+
+    payload = get_payload(context)
+    agent_id = payload.get("agent_id", "unknown")
+    code = payload.get("violation_code", "UNKNOWN")
+
+    result = registrar_violacao(agent_id, code)
+
+    return result
+
+@action(is_system_action=True)
+async def validar_consistencia_historica_action(context=None, **kwargs):
+    print("🔥 HIST")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    result = validar_consistencia_historica(ctx)
+
+    return result
+
+@action(is_system_action=True)
+async def contabilizar_tokens_action(context=None, **kwargs):
+    print("🔥 PMPTK")
+
+    payload = get_payload(context)
+    prompt = payload.get("prompt_tokens", 0)
+    completion = payload.get("completion_tokens", 0)
+
+    result = contabilizar_tokens(prompt, completion)
+
+    return result
+
+@action(is_system_action=True)
+async def calcular_eficiencia_nlu_action(context=None, **kwargs):
+    print("🔥 EFIC")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    result = calcular_eficiencia_nlu(
+        ctx.get("chunks_retornados", 0),
+        ctx.get("chunks_utilizados", 0)
+    )
+
+    return result
+
+@action(is_system_action=True)
+async def detectar_no_match_rag_action(context=None, **kwargs):
+    print("🔥 NO-M")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    result = detectar_no_match_rag(
+        ctx.get("chunks", []),
+        ctx.get("resposta_llm", "")
+    )
+
+    return result
+
+@action(is_system_action=True)
+async def detectar_loop_action(context=None, **kwargs):
+    print("🔥 VLOOP")
+
+    payload = get_payload(context)
+    mensagens = payload.get("context", {}).get("mensagens", [])
+
+    result = detectar_loop(mensagens)
+
+    return result
+
+@action(is_system_action=True)
+async def medir_tamanho_mensagem_action(context=None, **kwargs):
+    print("🔥 MSIZE")
+
+    text = context.get("text") or context.get("user_message", "")
+
+    result = medir_tamanho_mensagem(text)
+
+    return result
+
+@action(is_system_action=True)
+async def calcular_precisao_revocacao_action(context=None, **kwargs):
+    print("🔥 REVPREC_METRIC")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    result = calcular_precisao_revocacao(
+        ctx.get("y_true", []),
+        ctx.get("y_pred", [])
+    )
+
+    return result
+
+@action(is_system_action=True)
+async def avaliar_acuracia_semantica_action(context=None, **kwargs):
+    print("🔥 SEMAC")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    result = avaliar_acuracia_semantica(
+        ctx.get("audio_transcrito", ""),
+        ctx.get("referencia_humana", "")
+    )
+
+    return result
+
+
+
