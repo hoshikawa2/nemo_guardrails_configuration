@@ -829,16 +829,38 @@ export OPENAI_API_BASE=http://127.0.0.1:8051/v1
 export OPENAI_BASE_URL=http://127.0.0.1:8051/v1
 export OPENAI_API_KEY=dummy
 export OPENAI_MODEL=gpt-4.1
-python -m src.app
 ```
 
-![img.png](img.png)
+### 11.3.1 Teste dos guardrails
 
 ```bash
 bash scripts/run_tests.sh
 ```
 
+Este script valida todos os exemplos de guardrails descritos no documento para facilitar o entendimento.
+
 ![img_1.png](img_1.png)
+
+### 11.3.2 Teste sem uso do Nemo Guardrails
+
+```
+python -m src.app
+```
+
+O código **app.py** não utiliza o framework **Nemo Guardrails**. Ele apenas utiliza os guardrails criados de forma deterministica ou chamando a LLM. Como mostra o resultado abaixo.
+
+![img.png](img.png)
+
+### 11.3.3 Teste COM uso do Nemo Guardrails
+
+Já o código **app_nemo.py** utiliza o framework **Nemo Guardrails** para ilustrar as diferenças entre as 2 formas de implementar guardrails em seu código.
+
+
+    python -m src.app_nemo
+
+
+![img_3.png](img_3.png)
+
 
 ## 12. Mapeamento da planilha para implementação
 
