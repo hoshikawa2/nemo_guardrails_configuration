@@ -573,39 +573,67 @@ guardrails:
 ### Arquivo: `rails/input.co`
 
 ```yaml
-define flow check toxicidade
-user input
-bot evaluate toxicity
-if not allowed
-bot refuse
+define bot refuse to respond
+"I apologize, but I cannot provide that information."
 
+define flow check_input_terms
 
-define flow check out of scope
-user input
-bot evaluate out_of_scope
-if not allowed
-bot respond "Posso ajudar apenas com assuntos relacionados a telecom."
+# 🔐 Segurança
+$ok_msk  = execute mask_pii_action
+$ok_tox  = execute detectar_toxicidade_action
+$ok_oos  = execute detectar_out_of_scope_action
+
+# 💰 Regras de negócio
+$ok_adj  = execute validar_alcada_action
+
+# 🧠 Contexto
+$ok_hist = execute validar_consistencia_historica_action
+
+# 🔁 Conversação
+$ok_loop = execute detectar_loop_action
+$ok_size = execute medir_tamanho_mensagem_action
+$ok_fbk  = execute detectar_fallback_action
+
+# 🚨 HARD BLOCK
+if not ($ok_msk and $ok_tox and $ok_oos and $ok_adj and $ok_hist)
+bot refuse to respond
+stop
+
+# ⚠️ SOFT SIGNALS (não bloqueiam)
+# loop, tamanho e fallback são monitoramento
 ```
 
 ### Arquivo: `rails/output.co`
 
 ```yaml
-define flow check verbalizacao prematura
-bot message
-if contains "já fiz" or contains "já apliquei"
-bot revise
+define flow check_output_terms
 
+# 🧠 Qualidade da resposta
+$ok_revp = execute verbalizacao_prematura_action
+$ok_gnd  = execute validar_groundedness_action
+$ok_sup  = execute supervisor_vas_avulso_action
 
-define flow check groundedness
-bot message
-bot evaluate groundedness
-if not grounded
-bot revise
+# 📡 Compliance
+$ok_cmp  = execute enforce_compliance_anatel_action
 
-define flow check compliance anatel
-bot message
-  # CMP real tratado em Python
-bot continue
+# 📊 Métricas
+$ok_tcr  = execute calcular_tcr_action
+$ok_tok  = execute contabilizar_tokens_action
+$ok_efic = execute calcular_eficiencia_nlu_action
+$ok_nom  = execute detectar_no_match_rag_action
+$ok_prec = execute calcular_precisao_revocacao_action
+$ok_sem  = execute avaliar_acuracia_semantica_action
+
+# 🚨 Auditoria
+$ok_viol = execute registrar_violacao_action
+
+# 🚨 HARD BLOCK (só qualidade crítica)
+if not ($ok_revp and $ok_gnd and $ok_sup and $ok_cmp)
+bot refuse to respond
+stop
+
+# ⚠️ SOFT METRICS (não bloqueiam)
+# TCR, tokens, eficiência, precisão, STT etc
 ```
 
 ## Definições
