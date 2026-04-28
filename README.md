@@ -943,6 +943,10 @@ A estrutura permite evoluir para:
 
 - [NeMo Guardrails Library Configuration Overview](https://docs.nvidia.com/nemo/guardrails/latest/configure-rails/overview.html)
 - [Tools Integration with the NeMo Guardrails Library](https://docs.nvidia.com/nemo/guardrails/latest/integration/tools-integration.html)
+- [Configuring Custom Actions](https://docs.nvidia.com/nemo/guardrails/latest/configure-rails/actions/index.html)
+- [Registering Actions](https://docs.nvidia.com/nemo/guardrails/latest/configure-rails/actions/registering-actions.html)
+- [Logging and Debugging Guardrails Generated Responses](https://docs.nvidia.com/nemo/guardrails/latest/observability/logging/index.html)
+
 
 ### OpenTelemetry: tracing distribuído por spans.
 - [Logging and Debugging Guardrails Generated Responses](https://docs.nvidia.com/nemo/guardrails/latest/observability/logging/index.html)
