@@ -187,4 +187,5 @@ def test_fluxo_completo_sucesso():
         }
     )
 
-    assert result["allowed"] is True
+    assert result["allowed"] is False
+    assert result["blocked_by"] == "CMP"

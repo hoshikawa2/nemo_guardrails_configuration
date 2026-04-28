@@ -1,43 +1,11 @@
 models:
   - type: main
     engine: openai
-    model: gpt-4.1
-    parameters:
-      temperature: 0.2
-      max_tokens: 800
+    model: gpt-5
 
-# 🔧 MUITO IMPORTANTE
-actions:
-  - name: mask_pii
-    function: config.actions.action_mask_pii
+colang_version: "1.0"
 
-  - name: detectar_toxicidade
-    function: config.actions.action_detectar_toxicidade
-
-  - name: detectar_out_of_scope
-    function: config.actions.action_detectar_out_of_scope
-
-  - name: validar_alcada
-    function: config.actions.action_validar_alcada
-
-  - name: validar_groundedness
-    function: config.actions.action_validar_groundedness
-
-  - name: verbalizacao_prematura
-    function: config.actions.action_verbalizacao_prematura
-
-  - name: cmp
-    function: config.actions.action_cmp
-
-# 🧠 Organização dos rails
 rails:
-  input:
+  dialog:
     flows:
-      - input_check_toxicidade
-      - input_check_out_of_scope
-
-  output:
-    flows:
-      - output_check_verbalizacao_prematura
-      - output_check_groundedness
-      - output_check_cmp
+      - main
