@@ -485,7 +485,18 @@ ALCADA_MAX_AJUSTE=50
 
 ## 7. Configuração do NeMo Guardrails
 
-Arquivo: `config/config.yml`
+A camada de configuração no NeMo Guardrails é responsável por definir o comportamento do sistema sem alterar código Python.
+
+Ela é composta por dois arquivos principais:
+
+| Arquivo    | Função                                                         |
+|------------|----------------------------------------------------------------|
+| config.yml | Configuração estrutural (modelo, instruções, bindings)         |
+| rails.co   | Definição de fluxos, regras e comportamento conversacional     |
+
+
+
+### Arquivo: `config/config.yml`
 
 ```yaml
 models:
@@ -508,7 +519,147 @@ rails:
       - self check output
 ```
 
-## 8. Rails criados a partir da planilha
+O config.yml é o arquivo central de configuração do NeMo Guardrails.
+
+Ele define:
+
+qual modelo será utilizado
+como o agente deve se comportar
+quais fluxos (rails) serão executados
+como o sistema se conecta ao motor de LLM
+
+>**Nota:** Em termos simples, o config.yml define a estrutura e as regras globais do agente, antes mesmo da execução dos fluxos do .co
+
+Dentro do seu fluxo:
+    
+    User Input
+    ↓
+    config.yml  ← (define regras globais)
+    ↓
+    rails.co    ← (define comportamento dinâmico)
+    ↓
+    LLM / Python / Supervisor
+
+
+### Arquivo: `config/guardrails.yaml`
+
+```yaml
+guardrails:
+  - {codigo: MSK, item: "PII Masking", mecanismo: regex}
+  - {codigo: CMP, item: "Compliance Anatel", mecanismo: regex}
+  - {codigo: ADJ, item: "Alçada de Ajuste", mecanismo: python}
+  - {codigo: REVPREC_SUP, item: "Supervisor VAS Avulso", mecanismo: llm_supervisor}
+  - {codigo: TCR, item: "Conclusão de Tarefa", mecanismo: python}
+  - {codigo: REVPREC, item: "Verbalização Prematura", mecanismo: llm_rail}
+  - {codigo: FALLBACK, item: "Fallback Não Entendi", mecanismo: python}
+  - {codigo: VIOL, item: "Violação de Guardrails", mecanismo: python}
+  - {codigo: TOX, item: "Toxicidade", mecanismo: llm_rail}
+  - {codigo: OOS, item: "Out-of-Scope", mecanismo: llm_rail}
+  - {codigo: GND, item: "Groundedness", mecanismo: llm_rail}
+  - {codigo: HIST, item: "Consistência Histórica", mecanismo: python}
+  - {codigo: PMPTK, item: "Prompt Tokens", mecanismo: python}
+  - {codigo: EFIC, item: "Eficiência NLU", mecanismo: python}
+  - {codigo: NO-M, item: "No-Match RAG", mecanismo: python}
+  - {codigo: CSI, item: "Sentimento", mecanismo: llm_judge}
+  - {codigo: ALUC, item: "Taxa de Alucinação", mecanismo: llm_judge}
+  - {codigo: VLOOP, item: "Volume de Loops", mecanismo: python}
+  - {codigo: MSIZE, item: "Tamanho de Mensagem", mecanismo: python}
+  - {codigo: RQLT, item: "Qualidade da Resposta", mecanismo: llm_judge}
+  - {codigo: VCTN, item: "Tom de Voz", mecanismo: llm_judge}
+  - {codigo: REVPREC_METRIC, item: "Precisão e Revocação", mecanismo: python}
+  - {codigo: SEMAC, item: "Acurácia Semântica STT", mecanismo: python}
+```
+
+### Arquivo: `rails/input.co`
+
+```yaml
+define flow check toxicidade
+user input
+bot evaluate toxicity
+if not allowed
+bot refuse
+
+
+define flow check out of scope
+user input
+bot evaluate out_of_scope
+if not allowed
+bot respond "Posso ajudar apenas com assuntos relacionados a telecom."
+```
+
+### Arquivo: `rails/output.co`
+
+```yaml
+define flow check verbalizacao prematura
+bot message
+if contains "já fiz" or contains "já apliquei"
+bot revise
+
+
+define flow check groundedness
+bot message
+bot evaluate groundedness
+if not grounded
+bot revise
+
+define flow check compliance anatel
+bot message
+  # CMP real tratado em Python
+bot continue
+```
+
+## Definições
+
+### define flow
+
+Cria um fluxo de execução.
+
+    define flow self check input
+
+Representa:
+
+- um guardrail
+- uma sequência de validações 
+
+### Eventos
+
+Captura a entrada do usuário.
+
+- user input 
+
+### bot message
+
+Captura a resposta do LLM.
+
+- bot message 
+  
+### Ações com LLM
+
+Avaliação semântica
+
+- bot evaluate toxicity
+
+Função:
+
+    chamar LLM para classificar conteúdo
+
+Exemplo:
+
+- toxicidade
+- out-of-scope
+- groundedness
+
+### Condições
+
+    if not allowed
+    bot refuse
+
+Função:
+
+- bloquear fluxo
+- redirecionar resposta
+
+## 8. Exemplos de rails criados a partir da planilha
 
 Segue abaixo a estruturação dos exemplos para o entendimento do funcionamento da tecnologia.
 

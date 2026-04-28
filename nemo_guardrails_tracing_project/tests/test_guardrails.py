@@ -6,6 +6,7 @@ from src.deterministic_rails import *
 from src.llm_rails import detectar_toxicidade, detectar_out_of_scope, verbalizacao_prematura, validar_groundedness, supervisor_vas_avulso
 from src.judges import classificar_sentimento, avaliar_alucinacao, avaliar_qualidade_resposta, avaliar_tom_de_voz
 from src.registry import load_guardrail_registry
+from src.app import executar_atendimento
 
 def log_rail(codigo,item,entrada,result):
     print('\n'+'='*90)
@@ -160,3 +161,30 @@ def test_semac_acuracia_ok():
     r=avaliar_acuracia_semantica('cancelar serviço','cancelar serviço'); log_rail('SEMAC','Acurácia STT - ok','cancelar serviço',r); assert r.allowed is True
 def test_semac_acuracia_baixa():
     r=avaliar_acuracia_semantica('ativar plano','cancelar serviço'); log_rail('SEMAC','Acurácia STT - baixa','ativar plano vs cancelar serviço',r); assert r.allowed is False
+
+def test_fluxo_completo_bloqueia_cmp():
+    result = executar_atendimento(
+        "Quero ajuste",
+        {
+            "tipo_fluxo": "ajuste",
+            "requer_protocolo": True,
+            "resposta_llm": "Ajuste realizado na sua fatura.",  # ❌ sem protocolo
+        }
+    )
+
+    assert result["allowed"] is False
+    assert result["blocked_by"] == "CMP"
+
+def test_fluxo_completo_sucesso():
+    result = executar_atendimento(
+        "Quero ajuste",
+        {
+            "tipo_fluxo": "ajuste",
+            "requer_protocolo": True,
+            "resposta_llm": "Ajuste realizado. Protocolo: 123",
+            "chunks_rag": ["ajuste realizado protocolo"],
+            "supervisor_payload": {}
+        }
+    )
+
+    assert result["allowed"] is True

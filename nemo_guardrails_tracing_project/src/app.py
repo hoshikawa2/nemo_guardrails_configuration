@@ -1,5 +1,11 @@
 from .deterministic_rails import mask_pii, validar_alcada, enforce_compliance_anatel
-from .llm_rails import detectar_toxicidade, detectar_out_of_scope, validar_groundedness, verbalizacao_prematura, supervisor_vas_avulso
+from .llm_rails import (
+    detectar_toxicidade,
+    detectar_out_of_scope,
+    validar_groundedness,
+    verbalizacao_prematura,
+    supervisor_vas_avulso
+)
 from .judges import avaliar_qualidade_resposta
 import json
 
@@ -7,7 +13,9 @@ import json
 def executar_atendimento(user_input: str, context: dict):
     steps = []
 
-    # INPUT RAILS
+    # =========================
+    # 🔹 INPUT RAILS
+    # =========================
     r = mask_pii(user_input)
     steps.append(r)
     text = r.sanitized_text or user_input
@@ -15,46 +23,93 @@ def executar_atendimento(user_input: str, context: dict):
     for rail in [detectar_toxicidade, detectar_out_of_scope]:
         r = rail(text)
         steps.append(r)
+
         if not r.allowed:
             return {
                 "allowed": False,
                 "blocked_by": r.code,
+                "response": None,
                 "steps": steps
             }
 
-    # PYTHON RULE
+    # =========================
+    # 🔹 PYTHON RULE (CRÍTICA)
+    # =========================
     if "ajuste_valor" in context:
         r = validar_alcada(context["ajuste_valor"])
         steps.append(r)
+
         if not r.allowed:
             return {
                 "allowed": False,
                 "blocked_by": r.code,
+                "response": None,
                 "steps": steps
             }
 
-    # LLM RESPONSE (simulada ou real)
-    resposta = context.get("resposta_llm", "Resposta simulada do agente.")
+    # =========================
+    # 🔹 LLM RESPONSE
+    # =========================
+    resposta = context.get(
+        "resposta_llm",
+        "Resposta simulada do agente."
+    )
 
-    # OUTPUT + JUDGES + SUPERVISOR
-    for r in [
-        verbalizacao_prematura(resposta, context),
+    # =========================
+    # 🔹 OUTPUT RAILS (BLOQUEANTES)
+    # =========================
+    output_rails = [
         enforce_compliance_anatel(resposta, context),
+        verbalizacao_prematura(resposta, context),
         validar_groundedness(resposta, context),
-        avaliar_qualidade_resposta(user_input, resposta),
-        supervisor_vas_avulso(context.get("supervisor_payload", {}))
-    ]:
+    ]
+
+    for r in output_rails:
         steps.append(r)
 
+        # 🔥 NÃO bloquear groundedness automaticamente
+        if not r.allowed and r.code != "GND":
+            return {
+                "allowed": False,
+                "blocked_by": r.code,
+                "response": None,
+                "steps": steps
+            }
+
+    # =========================
+    # 🔹 JUDGE (NÃO BLOQUEIA)
+    # =========================
+    r_quality = avaliar_qualidade_resposta(user_input, resposta)
+    steps.append(r_quality)
+
+    # =========================
+    # 🔹 SUPERVISOR (AUDITORIA)
+    # =========================
+    r_supervisor = supervisor_vas_avulso(
+        context.get("supervisor_payload", {})
+    )
+    steps.append(r_supervisor)
+
+    # =========================
+    # 🔹 RESULTADO FINAL
+    # =========================
+    BLOCKING_CODES = {"CMP", "ADJ", "REVPREC"}
+
+    allowed = all(
+        s.allowed for s in steps
+        if s.code in BLOCKING_CODES
+    )
+
+
     return {
-        "allowed": all(s.allowed for s in steps if s.code != "RQLT"),
+        "allowed": allowed,
         "response": resposta,
         "steps": steps
     }
 
 
 # =========================
-# 🔥 EXECUÇÃO DIRETA
+# 🔥 PRINT FORMATADO
 # =========================
 def print_result(result):
     print("\n" + "=" * 80)
@@ -81,7 +136,6 @@ def print_result(result):
 
     print("=" * 80)
 
-    # JSON final (para integração)
     print("\n📦 JSON OUTPUT:")
     print(json.dumps({
         "allowed": result["allowed"],
@@ -99,8 +153,10 @@ def print_result(result):
     }, indent=2, ensure_ascii=False))
 
 
+# =========================
+# 🔥 EXECUÇÃO DIRETA
+# =========================
 if __name__ == "__main__":
-    # 🔧 EXEMPLO DE EXECUÇÃO
 
     user_input = "Meu CPF é 123.456.789-00 e quero ajuste de 20 reais"
 
