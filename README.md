@@ -432,23 +432,30 @@ Exemplo:
 ```text
 nemo_guardrails_tracing_project/
 ├── config/
-│   ├── config.yml
-│   ├── rails.co
+│   ├── config.yml : Arquivo de configuração para o Nemo Guardrail (Modelos, definições de rails de input e output)
+│   ├── config.py : Registro das ações para os guardrails
+│   ├── guardrails.yaml : Arquivo de mapeamento dos rails conforme definição da Planilha inicial (não utilizado pelo código)
+│   ├── rails/
+│   ├─────input.co : configuração de entrada dos fluxos Nemo 
+│   ├─────output.co : configuração de saída dos fluxos Nemo 
 │   └── guardrails_catalog.json
 ├── src/
-│   ├── app.py
-│   ├── deterministic_rails.py
-│   ├── supervisor.py
-│   ├── curadoria.py
-│   ├── tracing.py
-│   └── settings.py
+│   ├── app.py : demo para consumir rails sem uso de Nemo Guardrails
+│   ├── app_nemo.py : demo para consumir rails com uso de Nemo Guardrails
+│   ├── actions.py : Arquivo de Actions expondo deterministic_rails e llm_rails
+│   ├── deterministic_rails.py : rails deterministicos para serem utilizados como modelo na estrutura
+│   ├── judges.py : estrutura demo para ilustrar judge
+│   ├── llm_client.py : mockup para demo llm
+│   ├── llm_rails.py : rails llm para serem utilizados como modelo na estrutura
+│   ├── models.py : classe do modelo de resposta dos rails
+│   ├── registry.py : modelo de registry do guardrail
+│   └── prompts/ : pasta com os prompts para rails que utilizam llm
 ├── tests/
-│   └── test_guardrails.py
+│   └── test_guardrails.py : código utilizado para pytest
 ├── scripts/
-│   ├── run_demo.sh
-│   └── run_tests.sh
-├── requirements.txt
-├── .env.example
+│   └── run_tests.sh : bash script para testar os rails individualmente via pytest
+├── requirements.txt : bibliotecas necessárias para o projeto
+├── .env.example : variáveis de ambiente para configuração
 └── README.md
 ```
 
