@@ -494,12 +494,13 @@ ALCADA_MAX_AJUSTE=50
 
 A camada de configuração no NeMo Guardrails é responsável por definir o comportamento do sistema sem alterar código Python.
 
-Ela é composta por dois arquivos principais:
+Ela é composta por três arquivos principais:
 
 | Arquivo    | Função                                                         |
 |------------|----------------------------------------------------------------|
 | config.yml | Configuração estrutural (modelo, instruções, bindings)         |
-| rails.co   | Definição de fluxos, regras e comportamento conversacional     |
+| input.co   | Definição de fluxos, regras e comportamento conversacional     |
+| output.co  | Definição de fluxos, regras e comportamento conversacional     |
 
 
 
