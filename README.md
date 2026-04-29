@@ -961,7 +961,165 @@ O time deve comprovar:
 - Métricas de curadoria são geradas.
 - Spans aparecem no backend de tracing.
 
-## 15. Evolução futura
+## 15. Gerando o pacote do NeMo Guardrails para uso no CI/CD
+
+Este projeto pode ser utilizado como uma **biblioteca Python versionada**, permitindo que múltiplos projetos de agentes de IA reutilizem os guardrails de forma padronizada e governada.
+
+Para facilitar o entendimento, a mesma estrutura deste tutorial foi reorganizada para produzir o package como artefato. Descompacte o arquivo zip:
+
+[final_nemo_package_ready.zip](./final_nemo_package_ready.zip)
+
+---
+
+## 🎯 Objetivo
+
+Transformar este repositório em um **package Python instalável**, que será:
+
+- publicado no pipeline do NeMo
+- consumido pelos pipelines dos agentes de IA
+- versionado (ex: `1.0.0`, `1.1.0`, etc.)
+
+---
+
+## 🧱 Pré-requisitos
+
+- Python **3.11+**
+- `pip` atualizado
+- Ambiente virtual (recomendado)
+
+---
+
+## ⚙️ Passo 1 — Criar ambiente
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# ou
+.venv\Scripts\activate     # Windows
+```
+
+---
+
+## 📥 Passo 2 — Instalar dependências
+
+```bash
+pip install --upgrade pip
+pip install -e ".[dev]"
+```
+
+Isso instala:
+
+- o package local (`-e`)
+- dependências do projeto
+- ferramentas de teste e build (`pytest`, `build`, etc.)
+
+---
+
+## 🧪 Passo 3 — Executar testes
+
+```bash
+export OPENAI_API_KEY=sk-fake
+pytest -v
+```
+
+✔️ Garante que:
+
+- os guardrails estão funcionando
+- o package está consistente
+- o CI/CD não irá quebrar
+
+---
+
+## 📦 Passo 4 — Gerar o pacote
+
+```bash
+python -m build
+```
+
+Serão gerados:
+
+```
+dist/
+├── company_nemo_guardrails-1.0.0.tar.gz
+└── company_nemo_guardrails-1.0.0-py3-none-any.whl
+```
+
+---
+
+## 📤 Passo 5 — Publicar (ex: Azure Artifacts)
+
+```bash
+python -m twine upload dist/*
+```
+
+No pipeline do Azure DevOps, isso é feito automaticamente via:
+
+```yaml
+- task: TwineAuthenticate@1
+- script: python -m twine upload ...
+```
+
+---
+
+## 📥 Como consumir no projeto de agente
+
+No projeto do agente de IA:
+
+### requirements.txt
+
+```
+company-nemo-guardrails==1.0.0
+```
+
+### Código
+
+```python
+from company_nemo_guardrails import create_rails
+
+rails = create_rails()
+```
+
+---
+
+## 🧠 Boas práticas
+
+- Nunca usar `./config` diretamente
+- Sempre usar `create_rails()` (config embutida no package)
+- Versionar mudanças (sem sobrescrever versões antigas)
+- Validar com `pytest` antes de publicar
+
+---
+
+## 🔁 Relação com CI/CD
+
+Este processo é executado no pipeline do NeMo:
+
+```
+Commit → Testes → Build → Publish Package
+```
+
+E o pipeline do agente:
+
+```
+Install package → Build → Deploy
+```
+
+---
+
+## 🚀 Resultado final
+
+```
+NeMo Guardrails (library versionada)
+        ↓
+Pipeline publica package
+        ↓
+Agentes consomem via pip
+        ↓
+Deploy único (agent + guardrails)
+```
+
+
+## 16. Evolução futura
 
 A estrutura permite evoluir para:
 
