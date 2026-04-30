@@ -1033,6 +1033,9 @@ pytest -v
 ## 📦 Passo 4 — Gerar o pacote
 
 ```bash
+cd /final_pkg
+pip install -U pip
+pip install build
 python -m build
 ```
 
