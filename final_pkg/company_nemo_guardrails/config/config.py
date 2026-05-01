@@ -1,0 +1,43 @@
+from nemoguardrails import LLMRails, RailsConfig
+from company_nemo_guardrails.actions import (
+    mask_pii_action,
+    detectar_toxicidade_action,
+    detectar_out_of_scope_action,
+    validar_alcada_action,
+    verbalizacao_prematura_action,
+    validar_groundedness_action,
+    supervisor_vas_avulso_action,
+    enforce_compliance_anatel_action,
+    calcular_tcr_action,
+    detectar_fallback_action,
+    registrar_violacao_action,
+    validar_consistencia_historica_action,
+    contabilizar_tokens_action,
+    calcular_eficiencia_nlu_action,
+    calcular_eficiencia_nlu_action,
+    detectar_loop_action,
+    medir_tamanho_mensagem_action,
+    calcular_precisao_revocacao_action,
+    avaliar_acuracia_semantica_action
+)
+def init(app: LLMRails):
+
+    app.register_action(mask_pii_action)
+    app.register_action(detectar_toxicidade_action)
+    app.register_action(detectar_out_of_scope_action)
+    app.register_action(validar_alcada_action)
+    app.register_action(verbalizacao_prematura_action)
+    app.register_action(validar_groundedness_action)
+    app.register_action(supervisor_vas_avulso_action)
+    app.register_action(enforce_compliance_anatel_action)
+    app.register_action(calcular_tcr_action)
+    app.register_action(detectar_fallback_action)
+    app.register_action(registrar_violacao_action)
+    app.register_action(validar_consistencia_historica_action)
+    app.register_action(contabilizar_tokens_action)
+    app.register_action(calcular_eficiencia_nlu_action)
+    app.register_action(calcular_eficiencia_nlu_action)
+    app.register_action(detectar_loop_action)
+    app.register_action(medir_tamanho_mensagem_action)
+    app.register_action(calcular_precisao_revocacao_action)
+    app.register_action(avaliar_acuracia_semantica_action)

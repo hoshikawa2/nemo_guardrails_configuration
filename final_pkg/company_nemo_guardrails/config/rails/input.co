@@ -1,0 +1,28 @@
+define bot refuse to respond
+  "I apologize, but I cannot provide that information."
+
+define flow check_input_terms
+
+  # 🔐 Segurança
+  $ok_msk  = execute mask_pii_action
+  $ok_tox  = execute detectar_toxicidade_action
+  $ok_oos  = execute detectar_out_of_scope_action
+
+  # 💰 Regras de negócio
+  $ok_adj  = execute validar_alcada_action
+
+  # 🧠 Contexto
+  $ok_hist = execute validar_consistencia_historica_action
+
+  # 🔁 Conversação
+  $ok_loop = execute detectar_loop_action
+  $ok_size = execute medir_tamanho_mensagem_action
+  $ok_fbk  = execute detectar_fallback_action
+
+  # 🚨 HARD BLOCK
+  if not ($ok_msk and $ok_tox and $ok_oos and $ok_adj and $ok_hist)
+    bot refuse to respond
+    stop
+
+  # ⚠️ SOFT SIGNALS (não bloqueiam)
+  # loop, tamanho e fallback são monitoramento
