@@ -991,6 +991,65 @@ Transformar este repositório em um **package Python instalável**, que será:
 
 ## ⚙️ Passo 1 — Criar ambiente
 
+Será necessário configurar as variáveis de ambiente e o arquivo config.yml para utilizar o componente Nemo Guardrails deste projeto.
+
+company_nemo_guardrails/config/config.yml
+```bash
+models:
+  - type: main
+    engine: openai
+    model: openai.gpt-4.1
+    api_key_env_var: OPENAI_API_KEY
+    parameters:
+      temperature: 0
+      base_url: https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1
+      max_tokens: 50   # 🔥 evita respostas longas do LLM
+
+  # 🔥 usado apenas se você chamar explicitamente no flow
+  - type: self_check_input
+    engine: openai
+    model: openai.gpt-4.1
+    api_key_env_var: OPENAI_API_KEY
+    parameters:
+      temperature: 0
+      base_url: https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1
+
+
+rails:
+  input:
+    flows:
+      - check_input_terms
+  output:
+    flows:
+      - check_output_terms
+
+```
+
+Configurar o parâmetro base_url para apontar para seu endpoint OpenAI.
+
+
+Variáveis de Ambiente:
+```text
+# Endpoint OpenAI-compatible
+export OPENAI_API_BASE=https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1
+export OPENAI_BASE_URL=https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1
+export OPENAI_API_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+export OPENAI_MODEL=openai.gpt-4.1
+
+# Tracing / Phoenix / OpenTelemetry
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:6006/v1/traces
+export OTEL_SERVICE_NAME=nemo-guardrails-demo
+export ENABLE_TRACING=false
+
+# Modo demo: usa cliente fake se o proxy não estiver disponível
+export USE_MOCK_LLM=false
+export ALCADA_MAX_AJUSTE=50
+```
+
+---
+
+## ⚙️ Passo 2 — Criar ambiente
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
@@ -1000,37 +1059,7 @@ source .venv/bin/activate  # Linux/Mac
 
 ---
 
-## 📥 Passo 2 — Instalar dependências
-
-```bash
-pip install --upgrade pip
-pip install -e ".[dev]"
-```
-
-Isso instala:
-
-- o package local (`-e`)
-- dependências do projeto
-- ferramentas de teste e build (`pytest`, `build`, etc.)
-
----
-
-## 🧪 Passo 3 — Executar testes
-
-```bash
-export OPENAI_API_KEY=sk-fake
-pytest -v
-```
-
-✔️ Garante que:
-
-- os guardrails estão funcionando
-- o package está consistente
-- o CI/CD não irá quebrar
-
----
-
-## 📦 Passo 4 — Gerar o pacote
+## 📦 Passo 3 — Gerar o pacote
 
 ```bash
 cd /final_pkg
@@ -1049,7 +1078,38 @@ dist/
 
 ---
 
-## 📤 Passo 5 — Publicar (ex: Azure Artifacts)
+## 📥 Passo 4 — Instalar dependências
+
+```bash
+pip install --upgrade pip
+pip install -e ".[dev]"
+```
+
+Isso instala:
+
+- o package local (`-e`)
+- dependências do projeto
+- ferramentas de teste e build (`pytest`, `build`, etc.)
+
+---
+
+## 🧪 Passo 5 — Executar testes
+
+```bash
+export OPENAI_API_KEY=sk-fake
+pytest -v
+```
+
+✔️ Garante que:
+
+- os guardrails estão funcionando
+- o package está consistente
+- o CI/CD não irá quebrar
+
+---
+
+
+## 📤 Passo 6 — Publicar (ex: Azure Artifacts)
 
 ```bash
 python -m twine upload dist/*
