@@ -6,7 +6,7 @@ define flow check_output_terms
   $ok_sup  = execute supervisor_vas_avulso_action
 
   # 📡 Compliance
-  $ok_cmp  = execute enforce_compliance_anatel_action
+  $ok_cmp  = execute enforce_compliance_anatel_action(requer_protocolo=$requer_protocolo)
 
   # 📊 Métricas
   $ok_tcr  = execute calcular_tcr_action

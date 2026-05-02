@@ -11,9 +11,10 @@ def mask_pii(text:str)->RailResult:
         text=re.sub(r'(?i)(senha\s*[:=]?\s*)\S+',r'\1[SENHA_MASCARADA]',text)
         return RailResult(True,'PII mascarada' if text!=original else 'Nenhuma PII detectada',text,'MSK','regex')
 
-def enforce_compliance_anatel(text:str, context:dict)->RailResult:
+def enforce_compliance_anatel(requer_protocolo, text:str, context:dict)->RailResult:
     with span('rail.CMP', mechanism='regex'):
-        requer=context.get('tipo_fluxo')=='ajuste' or context.get('requer_protocolo') is True
+        # requer=context.get('tipo_fluxo')=='ajuste' or context.get('requer_protocolo') is True
+        requer=requer_protocolo
         if not requer: return RailResult(True,'Compliance Anatel não aplicável',text,'CMP','regex')
         has_protocol=bool(re.search(r'(?i)\bprotocolo\b[:\s-]*\d{6,}',text))
         if not has_protocol: return RailResult(False,'Resposta de ajuste sem número de protocolo',text,'CMP','regex')
@@ -21,8 +22,8 @@ def enforce_compliance_anatel(text:str, context:dict)->RailResult:
 
 def validar_alcada(valor:float, limite:float=50.0)->RailResult:
     with span('rail.ADJ', mechanism='python'):
-        if valor>limite: return RailResult(False,f'Valor R$ {valor:.2f} excede alçada de R$ {limite:.2f}; escalar para ATH',code='ADJ',mechanism='python')
-        return RailResult(True,f'Valor R$ {valor:.2f} dentro da alçada',code='ADJ',mechanism='python')
+        if valor>limite: return RailResult(False,f'Valor R$ {valor} excede alçada de R$ {limite}; escalar para ATH',code='ADJ',mechanism='python')
+        return RailResult(True,f'Valor R$ {valor} dentro da alçada',code='ADJ',mechanism='python')
 
 def calcular_tcr(status:str)->RailResult:
     status=status.lower(); categoria='Indefinido'

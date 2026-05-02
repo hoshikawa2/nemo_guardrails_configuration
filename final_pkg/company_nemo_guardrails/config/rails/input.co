@@ -9,7 +9,7 @@ define flow check_input_terms
   $ok_oos  = execute detectar_out_of_scope_action
 
   # 💰 Regras de negócio
-  $ok_adj  = execute validar_alcada_action
+  $ok_adj  = execute validar_alcada_action(ajuste_valor=$ajuste_valor,limite=$limite)
 
   # 🧠 Contexto
   $ok_hist = execute validar_consistencia_historica_action

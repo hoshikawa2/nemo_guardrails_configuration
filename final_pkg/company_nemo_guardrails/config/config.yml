@@ -1,21 +1,21 @@
 models:
   - type: main
     engine: openai
-    model: gpt-5
+    model: openai.gpt-4.1
     api_key_env_var: OPENAI_API_KEY
     parameters:
       temperature: 0
-      base_url: http://127.0.0.1:8051/v1
+      base_url: https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1
       max_tokens: 50   # 🔥 evita respostas longas do LLM
 
   # 🔥 usado apenas se você chamar explicitamente no flow
   - type: self_check_input
     engine: openai
-    model: openai.gpt-oss-120b
+    model: openai.gpt-4.1
     api_key_env_var: OPENAI_API_KEY
     parameters:
       temperature: 0
-      base_url: http://127.0.0.1:8051/v1
+      base_url: https://inference.generativeai.us-chicago-1.oci.oraclecloud.com/20231130/actions/v1
 
 
 rails:

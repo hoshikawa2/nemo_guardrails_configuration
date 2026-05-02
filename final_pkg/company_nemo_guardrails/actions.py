@@ -79,15 +79,10 @@ async def detectar_out_of_scope_action(context: Optional[dict] = None, **kwargs)
 # -------------------------
 
 @action(is_system_action=True)
-async def validar_alcada_action(context: Optional[dict] = None, **kwargs):
+async def validar_alcada_action(ajuste_valor, limite, context: Optional[dict] = None, **kwargs):
     print("🔥 ADJ")
 
-    payload = get_payload(context)
-    ctx = payload.get("context", {})
-
-    valor = ctx.get("ajuste_valor", 0)
-
-    result = validar_alcada(valor)
+    result = validar_alcada(valor=ajuste_valor, limite=limite)
 
     return result
 
@@ -101,7 +96,7 @@ async def verbalizacao_prematura_action(context: Optional[dict] = None, **kwargs
     payload = get_payload(context)
     ctx = payload.get("context", {})
 
-    resposta = ctx.get("resposta_llm", "")
+    resposta = ctx.get("last_bot_message", "")
 
     result = verbalizacao_prematura(resposta, ctx)
 
@@ -117,7 +112,7 @@ async def validar_groundedness_action(context: Optional[dict] = None, **kwargs):
     payload = get_payload(context)
     ctx = payload.get("context", {})
 
-    resposta = ctx.get("resposta_llm", "")
+    resposta = ctx.get("last_bot_message", "")
 
     result = validar_groundedness(resposta, ctx)
 
@@ -136,14 +131,14 @@ async def supervisor_vas_avulso_action(context: Optional[dict] = None, **kwargs)
     return result
 
 @action(is_system_action=True)
-async def enforce_compliance_anatel_action(context=None, **kwargs):
+async def enforce_compliance_anatel_action(requer_protocolo, context=None, **kwargs):
     print("🔥 CMP")
 
     text = context.get("text") or context.get("user_message", "")
     payload = get_payload(context)
     ctx = payload.get("context", {})
 
-    result = enforce_compliance_anatel(text, ctx)
+    result = enforce_compliance_anatel(requer_protocolo, text, ctx)
 
     return result
 

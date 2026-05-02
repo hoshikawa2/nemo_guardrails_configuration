@@ -13,6 +13,6 @@ def create_rails():
     rails = LLMRails(config)
 
     # 👇 opcional mas recomendado (garante registro)
-    rails.register_actions(actions)
+    rails.register_action(actions)
 
     return rails
