@@ -30,6 +30,16 @@ def main():
             "content": "o plano foi cancelado sem protocolo"
         }
     ]
+
+    messages = [
+        {"role": "context", "content": {}},
+        {
+            "role": "user",
+            "content": "meu cpf é 169.323.728-00"
+        }
+    ]
+
+
     tests.append(messages)
 
     rails = create_rails()
