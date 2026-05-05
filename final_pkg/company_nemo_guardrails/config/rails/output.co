@@ -16,6 +16,9 @@ define flow check_output_terms
   $ok_prec = execute calcular_precisao_revocacao_action
   $ok_sem  = execute avaliar_acuracia_semantica_action
 
+  # Segurança - Extra
+  $ok_delex_out = execute detectar_data_leakage_output_action
+
   # 🚨 Auditoria
   $ok_viol = execute registrar_violacao_action
 

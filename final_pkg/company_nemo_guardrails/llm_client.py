@@ -10,6 +10,12 @@ from company_nemo_guardrails.prompts.aluc import build_aluc_prompt
 from company_nemo_guardrails.prompts.rqlt import build_rqlt_prompt
 from company_nemo_guardrails.prompts.supervisor import build_supervisor_prompt
 
+# Segurança
+from company_nemo_guardrails.prompts.dlex_in import build_dlex_in_prompt
+from company_nemo_guardrails.prompts.dlex_out import build_dlex_out_prompt
+from company_nemo_guardrails.prompts.pinj import build_pinj_prompt
+from company_nemo_guardrails.prompts.ragsec import build_ragsec_prompt
+
 class LLMClient:
     def __init__(self):
         self.use_mock=os.getenv('USE_MOCK_LLM','true').lower()=='true'
@@ -53,6 +59,17 @@ class LLMClient:
 
         elif task == "SUPERVISOR_VAS":
             prompt = build_supervisor_prompt(payload)
+
+
+        # Segurança Extra
+        elif task == "PINJ":
+            prompt = build_pinj_prompt(payload["text"])
+        elif task == "RAGSEC":
+            prompt = build_ragsec_prompt(payload["text"])
+        elif task == "DLEX_IN":
+            prompt = build_dlex_in_prompt(payload["text"])
+        elif task == "DLEX_OUT":
+            prompt = build_dlex_out_prompt(payload["text"])
 
         else:
             raise ValueError(f"Task não suportada: {task}")

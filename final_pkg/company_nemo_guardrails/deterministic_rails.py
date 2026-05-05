@@ -65,3 +65,57 @@ def calcular_precisao_revocacao(y_true:list[str], y_pred:list[str])->RailResult:
 def avaliar_acuracia_semantica(audio_transcrito:str, referencia_humana:str)->RailResult:
     a=set(audio_transcrito.lower().split()); b=set(referencia_humana.lower().split()); score=len(a & b)/len(b) if b else 0
     return RailResult(score>=0.85,f'Acurácia semântica STT: {score:.2f}',code='SEMAC',mechanism='python',data={'score':score})
+
+# =========================
+# FILTROS ADICIONADOS DE SEGURANCA
+# =========================
+
+INJECTION_PATTERNS=[
+    r'(?i)\b(ignore|desconsidere|esque[cç]a|sobrescreva)\b.{0,80}\b(instru[cç][oõ]es|regras|pol[ií]ticas|prompt|sistema|guardrails?)\b',
+    r'(?i)\b(aja|finja|atue|responda|se comporte)\b.{0,80}\b(admin|administrador|sistema|developer|desenvolvedor|root|superusu[aá]rio|gerente|diretor|ceo|supervisor|coordenador|gestor)\b',
+    r'(?i)\b(revele|mostre|exiba|imprima|liste|repita)\b.{0,80}\b(system prompt|prompt interno|instru[cç][oõ]es internas|mensagem do sistema)\b',
+    r'(?i)\b(burle|bypass|contorne|quebre)\b.{0,80}\b(regra|pol[ií]tica|seguran[cç]a|guardrail|valida[cç][aã]o|al[cç]ada|elegibilidade)\b',
+    r'(?i)\b(fa[cç]a isso mesmo sendo proibido|sem seguir as regras|n[aã]o siga a pol[ií]tica)\b',
+    r'(?i)\b(instru[cç][aã]o para o agente|nota para o modelo|comando oculto|mensagem oculta)\b',
+    r'(?i)\bsempre\b.{0,80}\b(conceda|aprove|cancele|altere|isente|desconte)\b.{0,80}\b(sem valida[cç][aã]o|automaticamente|sem aprova[cç][aã]o|sem confirmar)\b',
+    r'(?i)\bnunca\b.{0,80}\b(valide|pe[cç]a aprova[cç][aã]o|confirme|verifique|aplique al[cç]ada|siga a pol[ií]tica)\b'
+]
+
+def detectar_prompt_injection_jailbreak(text:str)->RailResult:
+    with span('rail.PINJ', mechanism='regex'):
+        detected=any(re.search(p,text or '') for p in INJECTION_PATTERNS)
+        if detected: return RailResult(False,'Prompt injection/jailbreak detectado',text,'PINJ','regex')
+        return RailResult(True,'Prompt injection/jailbreak não detectado',text,'PINJ','regex')
+
+def detectar_rag_injection_context_poisoning(text:str)->RailResult:
+    with span('rail.RAGSEC', mechanism='regex'):
+        detected=any(re.search(p,text or '') for p in INJECTION_PATTERNS)
+        if detected: return RailResult(False,'RAG injection/context poisoning detectado',text,'RAGSEC','regex')
+        return RailResult(True,'RAG injection/context poisoning não detectado',text,'RAGSEC','regex')
+
+def detectar_data_leakage_input(text:str)->RailResult:
+    with span('rail.DLEX_IN', mechanism='regex'):
+        patterns=[
+            r'(?i)\b(system prompt|prompt interno|developer prompt|mensagem do sistema|instru[cç][oõ]es internas)\b',
+            r'(?i)\b(api[_ -]?key|token|secret|segredo|credencial|senha interna|chave de acesso)\b',
+            r'(?i)\b(endpoint interno|url interna|servi[cç]o interno|nome do servi[cç]o|cluster|namespace)\b',
+            r'(?i)\b(schema de tools?|schema da ferramenta|fun[cç][aã]o interna|par[aâ]metros da api|api interna)\b',
+            r'(?i)\b(regras internas|pol[ií]ticas internas|l[oó]gica de decis[aã]o|regras de al[cç]ada)\b',
+            r'(?i)\b(mostre|me diga|acesse|consulte|revele|envie|liste|exiba)\b.{0,80}\b(dados|cpf|fatura|telefone|cadastro)\b.{0,80}\b(outro cliente|terceiro|outra pessoa)\b'
+        ]
+        detected=any(re.search(p,text or '') for p in patterns)
+        if detected: return RailResult(False,'Tentativa de exfiltração detectada na entrada',text,'DLEX_IN','regex')
+        return RailResult(True,'Exfiltração não detectada na entrada',text,'DLEX_IN','regex')
+
+def detectar_data_leakage_output(text:str)->RailResult:
+    with span('rail.DLEX_OUT', mechanism='regex'):
+        patterns=[
+            r'(?i)\b(meu|nosso|este|o)\s+(system prompt|prompt interno|developer prompt|mensagem do sistema)\b',
+            r'(?i)\b(api[_ -]?key|token|secret|segredo|credencial|senha interna|chave de acesso)\b\s*[:=]\s*\S+',
+            r'(?i)\b(endpoint interno|url interna|servi[cç]o interno|nome do servi[cç]o|cluster|namespace)\b\s*[:=]\s*\S+',
+            r'(?i)\b(schema de tools?|schema da ferramenta|fun[cç][aã]o interna|par[aâ]metros da api|api interna)\b',
+            r'(?i)\b(nossas|minhas|as)\s+(regras internas|pol[ií]ticas internas|l[oó]gica de decis[aã]o|regras de al[cç]ada)\b'
+        ]
+        detected=any(re.search(p,text or '') for p in patterns)
+        if detected: return RailResult(False,'Vazamento detectado na saída',text,'DLEX_OUT','regex')
+        return RailResult(True,'Vazamento não detectado na saída',text,'DLEX_OUT','regex')

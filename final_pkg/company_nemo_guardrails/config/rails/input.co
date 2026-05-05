@@ -19,8 +19,13 @@ define flow check_input_terms
   $ok_size = execute medir_tamanho_mensagem_action
   $ok_fbk  = execute detectar_fallback_action
 
+  # Segurança - Adicional
+  $ok_pinj = execute detectar_prompt_injection_jailbreak_action
+  $ok_ragsec = execute detectar_rag_injection_context_poisoning_action
+  $ok_dlex_in = execute detectar_data_leakage_input_action
+
   # 🚨 HARD BLOCK
-  if not ($ok_msk and $ok_tox and $ok_oos and $ok_adj and $ok_hist)
+  if not ($ok_msk and $ok_tox and $ok_oos and $ok_adj and $ok_hist and $ok_pinj and $ok_ragsec and $ok_dlex_in)
     bot refuse to respond
     stop
 
