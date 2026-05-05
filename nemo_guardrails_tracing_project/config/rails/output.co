@@ -6,21 +6,24 @@ define flow check_output_terms
   $ok_sup  = execute supervisor_vas_avulso_action
 
   # 📡 Compliance
-  $ok_cmp  = execute enforce_compliance_anatel_action
+  $ok_cmp  = execute enforce_compliance_anatel_action(requer_protocolo=$requer_protocolo)
 
   # 📊 Métricas
   $ok_tcr  = execute calcular_tcr_action
   $ok_tok  = execute contabilizar_tokens_action
   $ok_efic = execute calcular_eficiencia_nlu_action
-  $ok_nom  = execute detectar_no_match_rag_action
+  #$ok_nom  = execute detectar_no_match_rag_action
   $ok_prec = execute calcular_precisao_revocacao_action
   $ok_sem  = execute avaliar_acuracia_semantica_action
+
+  # Segurança - Extra
+  $ok_delex_out = execute detectar_data_leakage_output_action
 
   # 🚨 Auditoria
   $ok_viol = execute registrar_violacao_action
 
   # 🚨 HARD BLOCK (só qualidade crítica)
-  if not ($ok_revp and $ok_gnd and $ok_sup and $ok_cmp)
+  if not ($ok_cmp)
     bot refuse to respond
     stop
 

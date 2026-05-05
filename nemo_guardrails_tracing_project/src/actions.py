@@ -22,6 +22,10 @@ from .llm_rails import (
     verbalizacao_prematura,
     validar_groundedness,
     supervisor_vas_avulso,
+    detectar_prompt_injection_jailbreak,
+    detectar_rag_injection_context_poisoning,
+    detectar_data_leakage_input,
+    detectar_data_leakage_output
 )
 
 # =========================
@@ -30,6 +34,77 @@ from .llm_rails import (
 
 def get_payload(context: Optional[dict]) -> dict:
     return (context or {}).get("payload", {})
+
+
+
+def get_ctx(context: Optional[dict]) -> dict:
+    payload = get_payload(context)
+    return payload.get("context", {}) or {}
+
+
+def get_input_text(context: Optional[dict], **kwargs) -> str:
+    payload = get_payload(context)
+    ctx = payload.get("context", {}) or {}
+
+    return (
+            kwargs.get("text")
+            or kwargs.get("user_message")
+            or payload.get("input_text")
+            or payload.get("user_message")
+            or ctx.get("input_text")
+            or ctx.get("user_message")
+            or (context or {}).get("text")
+            or (context or {}).get("user_message")
+            or ""
+    )
+
+
+def get_output_text(context: Optional[dict], **kwargs) -> str:
+    payload = get_payload(context)
+    ctx = payload.get("context", {}) or {}
+
+    return (
+            kwargs.get("text")
+            or kwargs.get("bot_message")
+            or kwargs.get("assistant_message")
+            or kwargs.get("llm_output")
+            or payload.get("output_text")
+            or payload.get("bot_message")
+            or payload.get("assistant_message")
+            or payload.get("llm_output")
+            or ctx.get("last_bot_message")
+            or ctx.get("resposta_llm")
+            or ctx.get("assistant_message")
+            or (context or {}).get("bot_message")
+            or (context or {}).get("assistant_message")
+            or (context or {}).get("llm_output")
+            or (context or {}).get("text")
+            or ""
+    )
+
+
+def chunks_to_text(chunks) -> str:
+    if chunks is None:
+        return ""
+    if isinstance(chunks, str):
+        return chunks
+    if isinstance(chunks, list):
+        parts = []
+        for item in chunks:
+            if isinstance(item, dict):
+                parts.append(
+                    str(
+                        item.get("text")
+                        or item.get("content")
+                        or item.get("page_content")
+                        or item.get("chunk")
+                        or item
+                    )
+                )
+            else:
+                parts.append(str(item))
+        return "\n".join(parts)
+    return str(chunks)
 
 # =========================
 # ACTIONS
@@ -280,5 +355,65 @@ async def avaliar_acuracia_semantica_action(context=None, **kwargs):
 
     return result
 
+# =========================
+# ACTIONS ADICIONADAS - SECURITY / SAFETY DETERMINISTIC RAILS
+# =========================
+
+@action(is_system_action=True)
+async def detectar_prompt_injection_jailbreak_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 PINJ")
+
+    text = context.get("text") or context.get("user_message", "")
+
+    result = detectar_prompt_injection_jailbreak(text, context)
+
+    return result
 
 
+@action(is_system_action=True)
+async def detectar_rag_injection_context_poisoning_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 RAGSEC")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+
+    # Preferência: validar explicitamente chunks/contexto recuperado.
+    # Fallback: validar texto de entrada se a action for usada como input rail.
+    chunks = (
+            kwargs.get("chunks")
+            or payload.get("chunks")
+            or ctx.get("chunks")
+            or ctx.get("retrieved_chunks")
+            or ctx.get("rag_context")
+            or ctx.get("documents")
+    )
+
+    text = chunks_to_text(chunks) or get_input_text(context, **kwargs)
+
+    result = detectar_rag_injection_context_poisoning(text, context)
+
+    return result
+
+
+@action(is_system_action=True)
+async def detectar_data_leakage_input_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 DLEX_IN")
+
+    text = context.get("text") or context.get("user_message", "")
+
+    result = detectar_data_leakage_input(text, context)
+
+    return result
+
+
+@action(is_system_action=True)
+async def detectar_data_leakage_output_action(context: Optional[dict] = None, **kwargs):
+    print("🔥 DLEX_OUT")
+
+    payload = get_payload(context)
+    ctx = payload.get("context", {})
+    resposta = ctx.get("last_bot_message", "")
+
+    result = detectar_data_leakage_output(resposta, context)
+
+    return result

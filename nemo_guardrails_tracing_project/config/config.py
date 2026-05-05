@@ -18,7 +18,11 @@ from src.actions import (
     detectar_loop_action,
     medir_tamanho_mensagem_action,
     calcular_precisao_revocacao_action,
-    avaliar_acuracia_semantica_action
+    avaliar_acuracia_semantica_action,
+    detectar_prompt_injection_jailbreak_action,
+    detectar_rag_injection_context_poisoning_action,
+    detectar_data_leakage_input_action,
+    detectar_data_leakage_output_action
 )
 def init(app: LLMRails):
 
@@ -41,3 +45,7 @@ def init(app: LLMRails):
     app.register_action(medir_tamanho_mensagem_action)
     app.register_action(calcular_precisao_revocacao_action)
     app.register_action(avaliar_acuracia_semantica_action)
+    app.register_action(detectar_prompt_injection_jailbreak_action)
+    app.register_action(detectar_rag_injection_context_poisoning_action)
+    app.register_action(detectar_data_leakage_input_action)
+    app.register_action(detectar_data_leakage_output_action)

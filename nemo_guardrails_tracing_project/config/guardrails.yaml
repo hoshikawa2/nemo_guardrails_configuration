@@ -22,3 +22,17 @@ guardrails:
   - {codigo: VCTN, item: "Tom de Voz", mecanismo: llm_judge}
   - {codigo: REVPREC_METRIC, item: "Precisão e Revocação", mecanismo: python}
   - {codigo: SEMAC, item: "Acurácia Semântica STT", mecanismo: python}
+  # =========================
+  # SEGURANÇA - INPUT
+  # =========================
+
+  - {codigo: PINJ, item: "Prompt Injection / Jailbreak Defense", mecanismo: llm_rail}
+  - {codigo: RAGSEC, item: "RAG Injection / Context Poisoning", mecanismo: llm_rail}
+  - {codigo: DLEX_IN, item: "Data Leakage / Secret Exfiltration (Input)", mecanismo: llm_rail}
+
+  # =========================
+  # SEGURANÇA - OUTPUT
+  # =========================
+
+  - {codigo: DLEX_OUT, item: "Data Leakage / Secret Exfiltration (Output)", mecanismo: Regex + llm_rail}
+  - {codigo: SAFE_OUT, item: "Content Safety / Unsafe Output", mecanismo: llm_rail}
