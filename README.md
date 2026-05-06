@@ -940,6 +940,182 @@ Endpoint OTLP (para envio de traces):
 
 ![img_2.png](img_2.png)
 
+### 10.2 Integração com Langfuse via OpenTelemetry
+
+O projeto já possui suporte a tracing utilizando OpenTelemetry (OTEL), o que permite integrar facilmente plataformas de observabilidade como:
+
+- Langfuse
+- Phoenix
+- Jaeger
+- Grafana Tempo
+- Elastic APM
+
+A arquitetura atual já está desacoplada do backend de observabilidade, portanto a adaptação para o Langfuse exige apenas pequenas alterações.
+
+---
+
+####  Como funciona
+
+O fluxo será:
+
+```text
+NeMo Guardrails
+       ↓
+OpenTelemetry
+       ↓
+OTLP Exporter
+       ↓
+Langfuse
+```
+
+---
+
+#### Código Atual
+
+O projeto já possui um `tracing.py` semelhante a:
+
+```python
+exporter = OTLPSpanExporter(
+    endpoint=endpoint,
+    timeout=5
+)
+```
+
+Atualmente ele publica para:
+
+```python
+http://localhost:6006/v1/traces
+```
+
+que normalmente corresponde ao Phoenix.
+
+---
+
+### Modificações Necessárias
+
+#### 10.2.1 Adicionar autenticação do Langfuse
+
+>**Nota:** O Langfuse exige autenticação Basic Auth no exporter OTLP.
+Renomeie o **tracing_langfuse.py** para **tracing.py** caso deseje adotar o Langfuse como padrão.
+
+---
+
+#### 10.2.2 Adicionar variáveis de ambiente
+
+Adicionar no `.env`:
+
+```bash
+ENABLE_TRACING=true
+
+LANGFUSE_PUBLIC_KEY=pk-xxxxxxxx
+
+LANGFUSE_SECRET_KEY=sk-xxxxxxxx
+
+OTEL_EXPORTER_OTLP_ENDPOINT=https://cloud.langfuse.com/api/public/otel
+```
+
+---
+
+#### 10.2.3 Explicação das Variáveis
+
+| Variável | Descrição |
+|---|---|
+| `ENABLE_TRACING` | Ativa ou desativa o tracing |
+| `LANGFUSE_PUBLIC_KEY` | Chave pública do projeto Langfuse |
+| `LANGFUSE_SECRET_KEY` | Chave secreta do projeto Langfuse |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Endpoint OTLP do Langfuse |
+
+---
+
+#### 10.2.4 Alteração no tracing.py
+
+**Código original**
+
+```python
+exporter = OTLPSpanExporter(
+    endpoint=endpoint,
+    timeout=5
+)
+```
+
+---
+
+#### 10.2.5 Código adaptado para Langfuse
+
+```python
+import base64
+
+public_key = os.getenv(
+    "LANGFUSE_PUBLIC_KEY"
+)
+
+secret_key = os.getenv(
+    "LANGFUSE_SECRET_KEY"
+)
+
+headers = {}
+
+if public_key and secret_key:
+
+    auth = base64.b64encode(
+        f"{public_key}:{secret_key}".encode()
+    ).decode()
+
+    headers["Authorization"] = (
+        f"Basic {auth}"
+    )
+
+exporter = OTLPSpanExporter(
+    endpoint=endpoint,
+    headers=headers,
+    timeout=5
+)
+```
+
+---
+
+#### 10.2.6 O que muda após isso
+
+O projeto passará a enviar automaticamente:
+
+- traces
+- spans
+- latência
+- execução de rails
+- execução de judges
+- tool calls
+- chamadas LLM
+- erros
+- retries
+
+para o Langfuse.
+
+---
+
+#### 10.2.7 Exemplo de Trace Visualizado
+
+```text
+TRACE
+ ├── input_guardrail
+ ├── supervisor
+ ├── llm_router
+ ├── mcp_tool
+ ├── judge_groundedness
+ └── final_response
+```
+
+#### 10.2.8 Adaptação para uso do Langfuse
+
+A implementação atual utiliza o **tracing.py** como padrão de observabilidade, porém existe outro código montado para autenticação com **Langfuse** chamado **tracing_langfuse.py**. Bastando utilizar a variáveis de memórias adicionais de autenticação como informado acima.
+
+Portanto a integração com Langfuse exige apenas:
+
+- alteração do endpoint
+- inclusão do Authorization header
+- configuração das variáveis de ambiente
+
+---
+
 ## 11. Como executar o projeto
 
 ### 11.1 Teste demonstrável sem proxy
