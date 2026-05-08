@@ -34,7 +34,7 @@ if _TRACING_ENABLED:
 
         endpoint = os.getenv(
             "OTEL_EXPORTER_OTLP_ENDPOINT",
-            "http://localhost:6006/v1/traces"
+            "http://localhost:8087/api/public/otel/v1/traces"
         )
 
         # -----------------------------------
